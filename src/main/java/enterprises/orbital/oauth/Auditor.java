@@ -1,4 +1,4 @@
-package enterprises.orbital.auth;
+package enterprises.orbital.oauth;
 
 import java.util.logging.Logger;
 

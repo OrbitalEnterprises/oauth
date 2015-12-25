@@ -1,4 +1,4 @@
-package enterprises.orbital.auth;
+package enterprises.orbital.oauth;
 
 /**
  * Interface which should be implemented by the embedding context to provide user account information when needed.
