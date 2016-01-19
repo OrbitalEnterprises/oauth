@@ -1,6 +1,9 @@
 package enterprises.orbital.oauth;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
@@ -11,52 +14,52 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class AuthUtil {
   /** The session variable holding the UID for the currently signed in user */
-  public static final String         UID_SESSION_VAR              = "oe_true_user";
+  public static final String              UID_SESSION_VAR              = "oe_true_user";
   /** The session variable holding the sign on source for the currently signed in user */
-  public static final String         SOURCE_SESSION_VAR           = "oe_auth_source";
+  public static final String              SOURCE_SESSION_VAR           = "oe_auth_source";
   /** The session variable holding the redirect when adding a source for a signed in user */
-  public static final String         ADDAUTH_REDIRECT_SESSION_VAR = "oe_addauth_redirect";
+  public static final String              ADDAUTH_REDIRECT_SESSION_VAR = "oe_addauth_redirect";
 
-  @SuppressWarnings("unused")
-  private static final Logger        log                          = Logger.getLogger(AuthUtil.class.getName());
+  private static final Logger             log                          = Logger.getLogger(AuthUtil.class.getName());
 
-  private static UserAccountProvider uaProvider                   = new UserAccountProvider() {
+  private static UserAccountProvider      uaProvider                   = new UserAccountProvider() {
 
-                                                                    @Override
-                                                                    public UserAccount getAccount(String uid) {
-                                                                      throw new IllegalStateException();
-                                                                    }
+                                                                         @Override
+                                                                         public UserAccount getAccount(String uid) {
+                                                                           throw new IllegalStateException();
+                                                                         }
 
-                                                                    @Override
-                                                                    public UserAuthSource getSource(UserAccount acct, String source) {
-                                                                      throw new IllegalStateException();
-                                                                    }
+                                                                         @Override
+                                                                         public UserAuthSource getSource(UserAccount acct, String source) {
+                                                                           throw new IllegalStateException();
+                                                                         }
 
-                                                                    @Override
-                                                                    public void removeSourceIfExists(UserAccount acct, String source) {
-                                                                      throw new IllegalStateException();
-                                                                    }
+                                                                         @Override
+                                                                         public void removeSourceIfExists(UserAccount acct, String source) {
+                                                                           throw new IllegalStateException();
+                                                                         }
 
-                                                                    @Override
-                                                                    public UserAuthSource getBySourceScreenname(String source, String screenName) {
-                                                                      throw new IllegalStateException();
-                                                                    }
+                                                                         @Override
+                                                                         public UserAuthSource getBySourceScreenname(String source, String screenName) {
+                                                                           throw new IllegalStateException();
+                                                                         }
 
-                                                                    @Override
-                                                                    public UserAuthSource createSource(
-                                                                                                       UserAccount newUser,
-                                                                                                       String source,
-                                                                                                       String screenName,
-                                                                                                       String body) {
-                                                                      throw new IllegalStateException();
-                                                                    }
+                                                                         @Override
+                                                                         public UserAuthSource createSource(
+                                                                                                            UserAccount newUser,
+                                                                                                            String source,
+                                                                                                            String screenName,
+                                                                                                            String body) {
+                                                                           throw new IllegalStateException();
+                                                                         }
 
-                                                                    @Override
-                                                                    public UserAccount createNewUserAccount(boolean b) {
-                                                                      throw new IllegalStateException();
-                                                                    }
+                                                                         @Override
+                                                                         public UserAccount createNewUserAccount(boolean b) {
+                                                                           throw new IllegalStateException();
+                                                                         }
+                                                                       };
 
-                                                                  };
+  private static List<UserActionListener> listeners                    = new ArrayList<UserActionListener>();
 
   public static void setUserAccountProvider(UserAccountProvider provider) {
     uaProvider = provider;
@@ -121,6 +124,15 @@ public class AuthUtil {
     req.getSession().setAttribute(SOURCE_SESSION_VAR, source.getSource());
     user.touch();
     source.touch();
+    synchronized (listeners) {
+      for (UserActionListener next : listeners) {
+        try {
+          next.loggedIn(user, source);
+        } catch (Throwable e) {
+          log.log(Level.WARNING, "Caught error in UserActionListener " + next + ", ignoring and continuing with other actions", e);
+        }
+      }
+    }
   }
 
   /**
@@ -130,10 +142,20 @@ public class AuthUtil {
    *          the HttpServletRequest holding auth credentials.
    */
   public static void signOff(HttpServletRequest req) {
+    UserAccount acct = AuthUtil.getCurrentUser(req);
     // TODO: for some sources, we want to allow actually signing the user out to clean up any credentials they may have left behind.
     // String source = (String) req.getSession().getAttribute(SOURCE_SESSION_VAR);
     req.getSession().removeAttribute(UID_SESSION_VAR);
     req.getSession().removeAttribute(SOURCE_SESSION_VAR);
+    synchronized (listeners) {
+      for (UserActionListener next : listeners) {
+        try {
+          next.loggedOut(acct);
+        } catch (Throwable e) {
+          log.log(Level.WARNING, "Caught error in UserActionListener " + next + ", ignoring and continuing with other actions", e);
+        }
+      }
+    }
   }
 
   public static void removeSourceIfExists(UserAccount acct, String source) {
@@ -149,6 +171,23 @@ public class AuthUtil {
   }
 
   public static UserAccount createNewUserAccount(boolean b) {
-    return uaProvider.createNewUserAccount(b);
+    UserAccount newUser = uaProvider.createNewUserAccount(b);
+    synchronized (listeners) {
+      for (UserActionListener next : listeners) {
+        try {
+          next.userCreated(newUser);
+        } catch (Throwable e) {
+          log.log(Level.WARNING, "Caught error in UserActionListener " + next + ", ignoring and continuing with other actions", e);
+        }
+      }
+    }
+    return newUser;
   }
+
+  public static void addListener(UserActionListener listener) {
+    synchronized (listeners) {
+      listeners.add(listener);
+    }
+  }
+
 }

@@ -37,4 +37,9 @@
   		<version>4.5.1</version>
   	</dependency>
   </dependencies>
+
+  <build>
+    <finalName>orbital-oauth-${project.version}</finalName>
+  </build>
+  
 </project>
