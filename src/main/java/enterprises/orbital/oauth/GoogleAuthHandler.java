@@ -17,7 +17,12 @@ import org.scribe.oauth.OAuthService;
 public class GoogleAuthHandler {
   private static final Logger log = Logger.getLogger(GoogleAuthHandler.class.getName());
 
-  public static String doGet(String googleApiKey, String googleApiSecret, String googleScope, String callback, HttpServletRequest req) throws IOException {
+  public static String doGet(
+                             String googleApiKey,
+                             String googleApiSecret,
+                             String googleScope,
+                             String callback,
+                             HttpServletRequest req) throws IOException {
     AuthUtil.prepAuthFlow(req);
 
     try {
@@ -25,10 +30,9 @@ public class GoogleAuthHandler {
       // in the callback.
       OAuthService service = new ServiceBuilder().provider(Google2Api.class).apiKey(googleApiKey).scope(googleScope).apiSecret(googleApiSecret)
           .callback(callback).build();
-      Token requestToken = service.getRequestToken();
-      req.getSession().setAttribute("google_req_token", requestToken);
-      return service.getAuthorizationUrl(requestToken);
-      // res.sendRedirect(service.getAuthorizationUrl(requestToken));
+      // Token requestToken = service.getRequestToken();
+      // req.getSession().setAttribute("google_req_token", requestToken);
+      return service.getAuthorizationUrl(Token.empty());
     } catch (Exception e) {
       log.log(Level.SEVERE, "error attempting google authentication", e);
       return null;

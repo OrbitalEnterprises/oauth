@@ -24,23 +24,25 @@ import com.google.gson.JsonParser;
 public class GoogleCallbackHandler {
   private static final Logger log = Logger.getLogger(GoogleCallbackHandler.class.getName());
 
-  public static String doGet(String googleApiKey, String googleApiSecret, String googleScope, String standardRedirect, HttpServletRequest req)
-    throws IOException {
+  public static String doGet(
+                             String googleApiKey,
+                             String googleApiSecret,
+                             String googleScope,
+                             String redirectCallback,
+                             String standardRedirect,
+                             HttpServletRequest req) throws IOException {
     // Construct the service to use for verification.
-    OAuthService service = new ServiceBuilder().provider(Google2Api.class).apiKey(googleApiKey).scope(googleScope).apiSecret(googleApiSecret).build();
+    OAuthService service = new ServiceBuilder().provider(Google2Api.class).apiKey(googleApiKey).scope(googleScope).apiSecret(googleApiSecret)
+        .callback(redirectCallback).build();
 
-    Token requestToken = null;
     String caller = standardRedirect;
     try {
-      // Retrieve the request token from before. This will throw an exception if we can't find it.
-      requestToken = (Token) req.getSession().getAttribute("google_req_token");
-
       // Exchange for access token
-      Verifier v = new Verifier(req.getParameter("oauth_verifier"));
-      Token accessToken = service.getAccessToken(requestToken, v);
+      Verifier v = new Verifier(req.getParameter("code"));
+      Token accessToken = service.getAccessToken(Token.empty(), v);
 
       // Attempt to retrieve credentials.
-      OAuthRequest request = new OAuthRequest(Verb.GET, "https://www.googleapis.com/auth/userinfo.email");
+      OAuthRequest request = new OAuthRequest(Verb.GET, "https://www.googleapis.com/oauth2/v2/userinfo?alt=json");
       service.signRequest(accessToken, request);
       Response response = request.send();
       if (!response.isSuccessful()) throw new IOException("credential request was not successful!");
@@ -51,7 +53,7 @@ public class GoogleCallbackHandler {
       // Two cases to handle here:
       // 1) the credentials match an existing user for auth source "google". If so, then we mark this user as logged in from google.
       // 2) the credentials don't match an existing user. In this case, we need to create the user for the first time.
-      String screenName = (new Gson()).fromJson((new JsonParser()).parse(response.getBody()).getAsJsonObject().get("screen_name"), String.class);
+      String screenName = (new Gson()).fromJson((new JsonParser()).parse(response.getBody()).getAsJsonObject().get("email"), String.class);
       UserAuthSource sourceVal = AuthUtil.getBySourceScreenname("google", screenName);
       if (sourceVal != null) {
         // Already exists

@@ -25,22 +25,29 @@ public class AuthUtil {
   private static UserAccountProvider      uaProvider                   = new UserAccountProvider() {
 
                                                                          @Override
-                                                                         public UserAccount getAccount(String uid) {
+                                                                         public UserAccount getAccount(
+                                                                                                       String uid) {
                                                                            throw new IllegalStateException();
                                                                          }
 
                                                                          @Override
-                                                                         public UserAuthSource getSource(UserAccount acct, String source) {
+                                                                         public UserAuthSource getSource(
+                                                                                                         UserAccount acct,
+                                                                                                         String source) {
                                                                            throw new IllegalStateException();
                                                                          }
 
                                                                          @Override
-                                                                         public void removeSourceIfExists(UserAccount acct, String source) {
+                                                                         public void removeSourceIfExists(
+                                                                                                          UserAccount acct,
+                                                                                                          String source) {
                                                                            throw new IllegalStateException();
                                                                          }
 
                                                                          @Override
-                                                                         public UserAuthSource getBySourceScreenname(String source, String screenName) {
+                                                                         public UserAuthSource getBySourceScreenname(
+                                                                                                                     String source,
+                                                                                                                     String screenName) {
                                                                            throw new IllegalStateException();
                                                                          }
 
@@ -54,18 +61,21 @@ public class AuthUtil {
                                                                          }
 
                                                                          @Override
-                                                                         public UserAccount createNewUserAccount(boolean b) {
+                                                                         public UserAccount createNewUserAccount(
+                                                                                                                 boolean b) {
                                                                            throw new IllegalStateException();
                                                                          }
                                                                        };
 
   private static List<UserActionListener> listeners                    = new ArrayList<UserActionListener>();
 
-  public static void setUserAccountProvider(UserAccountProvider provider) {
+  public static void setUserAccountProvider(
+                                            UserAccountProvider provider) {
     uaProvider = provider;
   }
 
-  public static void prepAuthFlow(HttpServletRequest req) {
+  public static void prepAuthFlow(
+                                  HttpServletRequest req) {
     if (getCurrentUser(req) == null) return;
     if (req.getParameter("redirect") != null) {
       req.getSession().setAttribute(ADDAUTH_REDIRECT_SESSION_VAR, req.getParameter("redirect"));
@@ -81,7 +91,8 @@ public class AuthUtil {
    *          the HttpServletRequest holding auth credentials.
    * @return the current signed in UserAccount, or null if no user signed in.
    */
-  public static UserAccount getCurrentUser(HttpServletRequest req) {
+  public static UserAccount getCurrentUser(
+                                           HttpServletRequest req) {
     String uid = (String) req.getSession().getAttribute(UID_SESSION_VAR);
     String source = (String) req.getSession().getAttribute(SOURCE_SESSION_VAR);
     if (uid != null && source != null) { return uaProvider.getAccount(uid); }
@@ -95,7 +106,8 @@ public class AuthUtil {
    *          the HttpServletRequest holding auth credentials.
    * @return the UserAuthSource of the currently signed in UserAccount, or null if no user signed in.
    */
-  public static UserAuthSource getCurrentSource(HttpServletRequest req) {
+  public static UserAuthSource getCurrentSource(
+                                                HttpServletRequest req) {
     UserAccount acct = getCurrentUser(req);
     if (acct == null) return null;
     String source = (String) req.getSession().getAttribute(SOURCE_SESSION_VAR);
@@ -113,8 +125,13 @@ public class AuthUtil {
    *          the UserAccount to sign on.
    * @param source
    *          the source from which the user account signed on.
+   * @throws IOException
+   *           if an error occurs processing signon.
    */
-  public static void signOn(HttpServletRequest req, UserAccount user, UserAuthSource source) throws IOException {
+  public static void signOn(
+                            HttpServletRequest req,
+                            UserAccount user,
+                            UserAuthSource source) throws IOException {
     if (user.isDisabled()) {
       // Reject sign on attempt from disabled user
       signOff(req);
@@ -141,7 +158,8 @@ public class AuthUtil {
    * @param req
    *          the HttpServletRequest holding auth credentials.
    */
-  public static void signOff(HttpServletRequest req) {
+  public static void signOff(
+                             HttpServletRequest req) {
     UserAccount acct = AuthUtil.getCurrentUser(req);
     // TODO: for some sources, we want to allow actually signing the user out to clean up any credentials they may have left behind.
     // String source = (String) req.getSession().getAttribute(SOURCE_SESSION_VAR);
@@ -158,19 +176,28 @@ public class AuthUtil {
     }
   }
 
-  public static void removeSourceIfExists(UserAccount acct, String source) {
+  public static void removeSourceIfExists(
+                                          UserAccount acct,
+                                          String source) {
     uaProvider.removeSourceIfExists(acct, source);
   }
 
-  public static UserAuthSource getBySourceScreenname(String source, String screenName) {
+  public static UserAuthSource getBySourceScreenname(
+                                                     String source,
+                                                     String screenName) {
     return uaProvider.getBySourceScreenname(source, screenName);
   }
 
-  public static UserAuthSource createSource(UserAccount newUser, String source, String screenName, String body) {
+  public static UserAuthSource createSource(
+                                            UserAccount newUser,
+                                            String source,
+                                            String screenName,
+                                            String body) {
     return uaProvider.createSource(newUser, source, screenName, body);
   }
 
-  public static UserAccount createNewUserAccount(boolean b) {
+  public static UserAccount createNewUserAccount(
+                                                 boolean b) {
     UserAccount newUser = uaProvider.createNewUserAccount(b);
     synchronized (listeners) {
       for (UserActionListener next : listeners) {
@@ -184,7 +211,8 @@ public class AuthUtil {
     return newUser;
   }
 
-  public static void addListener(UserActionListener listener) {
+  public static void addListener(
+                                 UserActionListener listener) {
     synchronized (listeners) {
       listeners.add(listener);
     }
