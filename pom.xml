@@ -6,14 +6,14 @@
     <version>1.0.0</version>
   </parent>
   <artifactId>oauth</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.2</version>
   <name>oauth</name>
   <description>OAuth authentication support for Orbital Enterprises projects</description>
   <url>https://github.com/OrbitalEnterprises/orbital-oauth</url>
   <scm>
   	<url>https://github.com/OrbitalEnterprises/orbital-oauth</url>
   	<connection>scm:git:https://github.com/OrbitalEnterprises/orbital-oauth.git</connection>
-  	<tag>rel_1_0_0</tag>
+  	<tag>rel_1_0_2</tag>
   	<developerConnection>scm:git:git@github.com:OrbitalEnterprises/orbital-oauth.git</developerConnection>
   </scm>
   
@@ -31,7 +31,7 @@
   	<dependency>
   		<groupId>enterprises.orbital</groupId>
   		<artifactId>base</artifactId>
-  		<version>1.0.1</version>
+  		<version>1.0.2</version>
   	</dependency>
   	<dependency>
   		<groupId>com.google.code.gson</groupId>
