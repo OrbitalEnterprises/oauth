@@ -24,7 +24,13 @@ import com.google.gson.JsonParser;
 public class EVECallbackHandler {
   private static final Logger log = Logger.getLogger(EVECallbackHandler.class.getName());
 
-  public static String doGet(Class<? extends Api> apiClass, String clientID, String secretKey, String verifyURL, String callback, HttpServletRequest req)
+  public static String doGet(
+                             Class<? extends Api> apiClass,
+                             String clientID,
+                             String secretKey,
+                             String verifyURL,
+                             String callback,
+                             HttpServletRequest req)
     throws IOException {
     // Construct the service to use for verification.
     OAuthService service = new ServiceBuilder().provider(apiClass).apiKey(clientID).apiSecret(secretKey).build();
