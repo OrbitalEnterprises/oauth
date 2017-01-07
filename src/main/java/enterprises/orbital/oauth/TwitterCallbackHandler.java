@@ -6,15 +6,14 @@ import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.builder.api.TwitterApi;
-import org.scribe.model.OAuthRequest;
-import org.scribe.model.Response;
-import org.scribe.model.Token;
-import org.scribe.model.Verb;
-import org.scribe.model.Verifier;
-import org.scribe.oauth.OAuthService;
-
+import com.github.scribejava.apis.TwitterApi;
+import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.model.OAuth1AccessToken;
+import com.github.scribejava.core.model.OAuth1RequestToken;
+import com.github.scribejava.core.model.OAuthRequest;
+import com.github.scribejava.core.model.Response;
+import com.github.scribejava.core.model.Verb;
+import com.github.scribejava.core.oauth.OAuth10aService;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 
@@ -24,22 +23,26 @@ import com.google.gson.JsonParser;
 public class TwitterCallbackHandler {
   private static final Logger log = Logger.getLogger(TwitterCallbackHandler.class.getName());
 
-  public static String doGet(String twitterApiKey, String twitterApiSecret, String standardRedirect, HttpServletRequest req) throws IOException {
+  public static String doGet(
+                             String twitterApiKey,
+                             String twitterApiSecret,
+                             String standardRedirect,
+                             HttpServletRequest req)
+    throws IOException {
     // Construct the service to use for verification.
-    OAuthService service = new ServiceBuilder().provider(TwitterApi.Authenticate.class).apiKey(twitterApiKey).apiSecret(twitterApiSecret).build();
+    OAuth10aService service = new ServiceBuilder().apiKey(twitterApiKey).apiSecret(twitterApiSecret).build(TwitterApi.instance());
 
-    Token requestToken = null;
+    OAuth1RequestToken requestToken = null;
     String caller = standardRedirect;
     try {
       // Retrieve the request token from before. This will throw an exception if we can't find it.
-      requestToken = (Token) req.getSession().getAttribute("twitter_req_token");
+      requestToken = (OAuth1RequestToken) req.getSession().getAttribute("twitter_req_token");
 
       // Exchange for access token
-      Verifier v = new Verifier(req.getParameter("oauth_verifier"));
-      Token accessToken = service.getAccessToken(requestToken, v);
+      OAuth1AccessToken accessToken = service.getAccessToken(requestToken, req.getParameter("oauth_verifier"));
 
       // Attempt to retrieve credentials.
-      OAuthRequest request = new OAuthRequest(Verb.GET, "https://api.twitter.com/1.1/account/verify_credentials.json");
+      OAuthRequest request = new OAuthRequest(Verb.GET, "https://api.twitter.com/1.1/account/verify_credentials.json", service.getConfig());
       service.signRequest(accessToken, request);
       Response response = request.send();
       if (!response.isSuccessful()) throw new IOException("credential request was not successful!");

@@ -6,15 +6,13 @@ import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.builder.api.Google2Api;
-import org.scribe.model.OAuthRequest;
-import org.scribe.model.Response;
-import org.scribe.model.Token;
-import org.scribe.model.Verb;
-import org.scribe.model.Verifier;
-import org.scribe.oauth.OAuthService;
-
+import com.github.scribejava.apis.GoogleApi20;
+import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.model.OAuthRequest;
+import com.github.scribejava.core.model.Response;
+import com.github.scribejava.core.model.Verb;
+import com.github.scribejava.core.oauth.OAuth20Service;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 
@@ -30,19 +28,19 @@ public class GoogleCallbackHandler {
                              String googleScope,
                              String redirectCallback,
                              String standardRedirect,
-                             HttpServletRequest req) throws IOException {
+                             HttpServletRequest req)
+    throws IOException {
     // Construct the service to use for verification.
-    OAuthService service = new ServiceBuilder().provider(Google2Api.class).apiKey(googleApiKey).scope(googleScope).apiSecret(googleApiSecret)
-        .callback(redirectCallback).build();
+    OAuth20Service service = new ServiceBuilder().apiKey(googleApiKey).scope(googleScope).apiSecret(googleApiSecret).callback(redirectCallback)
+        .build(GoogleApi20.instance());
 
     String caller = standardRedirect;
     try {
       // Exchange for access token
-      Verifier v = new Verifier(req.getParameter("code"));
-      Token accessToken = service.getAccessToken(Token.empty(), v);
+      OAuth2AccessToken accessToken = service.getAccessToken(req.getParameter("code"));
 
       // Attempt to retrieve credentials.
-      OAuthRequest request = new OAuthRequest(Verb.GET, "https://www.googleapis.com/oauth2/v2/userinfo?alt=json");
+      OAuthRequest request = new OAuthRequest(Verb.GET, "https://www.googleapis.com/oauth2/v2/userinfo?alt=json", service.getConfig());
       service.signRequest(accessToken, request);
       Response response = request.send();
       if (!response.isSuccessful()) throw new IOException("credential request was not successful!");

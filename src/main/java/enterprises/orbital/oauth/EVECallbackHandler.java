@@ -6,15 +6,12 @@ import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.scribe.builder.ServiceBuilder;
-import org.scribe.builder.api.Api;
-import org.scribe.model.OAuthRequest;
-import org.scribe.model.Response;
-import org.scribe.model.Token;
-import org.scribe.model.Verb;
-import org.scribe.model.Verifier;
-import org.scribe.oauth.OAuthService;
-
+import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.model.OAuthRequest;
+import com.github.scribejava.core.model.Response;
+import com.github.scribejava.core.model.Verb;
+import com.github.scribejava.core.oauth.OAuth20Service;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 
@@ -25,7 +22,6 @@ public class EVECallbackHandler {
   private static final Logger log = Logger.getLogger(EVECallbackHandler.class.getName());
 
   public static String doGet(
-                             Class<? extends Api> apiClass,
                              String clientID,
                              String secretKey,
                              String verifyURL,
@@ -33,15 +29,14 @@ public class EVECallbackHandler {
                              HttpServletRequest req)
     throws IOException {
     // Construct the service to use for verification.
-    OAuthService service = new ServiceBuilder().provider(apiClass).apiKey(clientID).apiSecret(secretKey).build();
+    OAuth20Service service = new ServiceBuilder().apiKey(clientID).apiSecret(secretKey).build(EVEApi.instance());
 
     try {
       // Exchange for access token
-      Verifier v = new Verifier(req.getParameter("code"));
-      Token accessToken = service.getAccessToken(null, v);
+      OAuth2AccessToken accessToken = service.getAccessToken(req.getParameter("code"));
 
       // Retrieve character selected for login. This is the ID we associate with this auth source.
-      OAuthRequest request = new OAuthRequest(Verb.GET, verifyURL);
+      OAuthRequest request = new OAuthRequest(Verb.GET, verifyURL, service.getConfig());
       service.signRequest(accessToken, request);
       Response response = request.send();
       if (!response.isSuccessful()) throw new IOException("credential request was not successful!");
